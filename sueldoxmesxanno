@@ -1,0 +1,25 @@
+WITH recursive months AS (
+  SELECT generate_series(
+           DATE_TRUNC('MONTH', MIN(fecefectiva)),
+           DATE_TRUNC('MONTH', MAX(fecfin)),
+           '1 month'
+         ) AS month
+  FROM exp_expedientexsueldos
+  WHERE EXTRACT(YEAR FROM fecefectiva) >= 2020 AND idempleado = 3257
+),
+all_months AS (
+  SELECT DISTINCT
+         m.month,
+         EXTRACT(YEAR FROM m.month) AS anio,
+         EXTRACT(MONTH FROM m.month) AS mes
+  FROM months m
+  JOIN exp_expedientexsueldos e ON m.month >= DATE_TRUNC('MONTH', e.fecefectiva)
+                               AND m.month <= DATE_TRUNC('MONTH', e.fecfin)
+                               AND idempleado = 3257
+)
+SELECT idempleado, anio, mes, COALESCE(e.monto, 0) AS sueldo
+FROM all_months a
+LEFT JOIN exp_expedientexsueldos e ON a.month >= DATE_TRUNC('MONTH', e.fecefectiva)
+                                  AND a.month <= DATE_TRUNC('MONTH', e.fecfin)
+                                  AND e.idempleado = 3257
+ORDER BY a.anio, a.mes;
